@@ -18,7 +18,7 @@
         <header class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">Controle de Estoque Inteligente</h1>
-                <p class="text-sm text-gray-500">Painel Operacional com Leitor, Fotos e Exportação</p>
+                <p class="text-sm text-gray-500">Versão de Demonstração (Até 5 Produtos)</p>
             </div>
             <div class="flex items-center gap-3">
                 <button onclick="exportarCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm flex items-center gap-2">
@@ -62,7 +62,7 @@
                         </div>
                     </div>
 
-                    <!-- Leitor de Código de Barras (Janela Modal / Div) -->
+                    <!-- Leitor de Código de Barras -->
                     <div id="reader-container" class="hidden border border-gray-200 rounded-lg p-2 bg-gray-50">
                         <div id="reader" style="width: 100%;"></div>
                         <button type="button" onclick="pararLeitorBarcode()" class="mt-2 w-full bg-red-50 hover:bg-red-100 text-red-600 py-1 rounded text-xs font-medium">Fechar Leitor</button>
@@ -157,7 +157,7 @@
                 atualizarMetricas(produtosCache);
 
                 statusEl.className = "px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200";
-                statusEl.textContent = "Online (Supabase Ativo)";
+                statusEl.textContent = "Online (Demonstração Ativa)";
             } catch (err) {
                 console.error('Erro ao carregar:', err);
                 statusEl.className = "px-3 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200";
@@ -212,14 +212,21 @@
             document.getElementById('alertas-ruptura').textContent = rupturas;
         }
 
-        // Submeter Formulário (Criar ou Atualizar)
+        // Submeter Formulário com Restrição de Demonstração (Limite de 5 produtos)
         document.getElementById('form-produto').addEventListener('submit', async (e) => {
             e.preventDefault();
             const editId = document.getElementById('edit-id').value;
+
+            // Validação da Versão de Demonstração (apenas para novos cadastros)
+            if (!editId && produtosCache.length >= 5) {
+                alert("⚠️ Versão de Demonstração:\n\nO limite de testes para esta demonstração é de 5 produtos.\n\nPara ter um sistema de estoque completo, ilimitado e personalizado para a sua empresa, clique em OK para falar diretamente conosco no WhatsApp!");
+                window.open("https://wa.me/5521967860665?text=Olá! Testei a demonstração de estoque e quero contratar o sistema completo para a minha empresa.", "_blank");
+                return;
+            }
+
             const fileInput = document.getElementById('foto-file');
             let fotoUrl = null;
 
-            // Se selecionou foto, faz upload para o Supabase Storage
             if (fileInput.files.length > 0) {
                 const file = fileInput.files[0];
                 const fileName = `${Date.now()}-${file.name}`;
@@ -230,7 +237,6 @@
                     return;
                 }
                 
-                // Obter link público da foto
                 const { data: publicUrlData } = _supabase.storage.from('fotos').getPublicUrl(fileName);
                 fotoUrl = publicUrlData.publicUrl;
             }
@@ -246,11 +252,9 @@
             if (fotoUrl) dadosProduto.foto = fotoUrl;
 
             if (editId) {
-                // Atualizar
                 const { error } = await _supabase.from('produtos').update(dadosProduto).eq('id', editId);
                 if (error) { alert('Erro ao atualizar: ' + error.message); return; }
             } else {
-                // Inserir novo
                 const { error } = await _supabase.from('produtos').insert([dadosProduto]);
                 if (error) { alert('Erro ao guardar: ' + error.message); return; }
             }
@@ -290,7 +294,6 @@
             carregarProdutos();
         }
 
-        // Exportar para CSV (Compatível com Google Sheets / Excel)
         function exportarCSV() {
             if (produtosCache.length === 0) {
                 alert('Não há dados para exportar.');
@@ -312,7 +315,6 @@
             document.body.removeChild(link);
         }
 
-        // Leitor de Código de Barras via Câmara
         function iniciarLeitorBarcode() {
             const container = document.getElementById('reader-container');
             container.classList.remove('hidden');
@@ -325,9 +327,7 @@
                     document.getElementById('sku').value = decodedText;
                     pararLeitorBarcode();
                 },
-                (errorMessage) => {
-                    // Ignora erros de leitura contínua
-                }
+                (errorMessage) => {}
             ).catch(err => {
                 alert('Erro ao iniciar câmara: ' + err);
             });
