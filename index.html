@@ -20,9 +20,16 @@
                 <h1 class="text-2xl font-bold text-gray-900">Controle de Estoque Inteligente</h1>
                 <p class="text-sm text-gray-500">Versão de Demonstração (Até 5 Produtos)</p>
             </div>
-            <div class="flex items-center gap-3">
-                <button onclick="exportarCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm flex items-center gap-2">
-                    📊 Exportar para Planilha
+            <div class="flex flex-wrap items-center gap-2">
+                <button onclick="baixarTemplate()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-xs font-medium transition shadow-sm flex items-center gap-1">
+                    📥 Baixar Template
+                </button>
+                <label class="bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2 rounded-lg text-xs font-medium transition shadow-sm flex items-center gap-1 cursor-pointer">
+                    📂 Importar Planilha
+                    <input type="file" id="import-file" accept=".csv" class="hidden" onchange="importarCSV(event)">
+                </label>
+                <button onclick="exportarCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-medium transition shadow-sm flex items-center gap-1">
+                    📊 Exportar
                 </button>
                 <div id="status-conexao" class="px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
                     A ligar à nuvem...
@@ -152,20 +159,16 @@
 
         async function registrarEContarVisitas() {
             try {
-                // Tenta ler o contador com id = 1
                 let { data, error } = await _supabase.from('contador').select('visitas').eq('id', 1).single();
-                
                 let totalVisitas = 1;
                 if (data) {
                     totalVisitas = (data.visitas || 0) + 1;
                     await _supabase.from('contador').update({ visitas: totalVisitas }).eq('id', 1);
                 } else {
-                    // Se não existir, insere o primeiro registo
                     await _supabase.from('contador').insert([{ id: 1, visitas: 1 }]);
                 }
                 document.getElementById('contador-visitas').textContent = totalVisitas;
             } catch (err) {
-                // Fallback local se a tabela contador não for criada no Supabase ainda
                 let localVisitas = parseInt(localStorage.getItem('visitas_demo') || '0') + 1;
                 localStorage.setItem('visitas_demo', localVisitas);
                 document.getElementById('contador-visitas').textContent = localVisitas;
@@ -337,6 +340,87 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        }
+
+        // Baixar Template CSV Modelo
+        function baixarTemplate() {
+            let csvContent = "data:text/csv;charset=utf-8,SKU,Nome,Quantidade,Minimo,Custo\n";
+            csvContent += "PRD-001,Exemplo Material A,10,2,25.50\n";
+            csvContent += "PRD-002,Exemplo Material B,5,1,120.00\n";
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "template_estoque.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Importar Planilha CSV Preenchida
+        async function importarCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const text = e.target.result;
+                const lines = text.split('\n');
+                let sucessos = 0;
+                let erros = 0;
+
+                // Começa a partir de i = 1 para ignorar o cabeçalho
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+
+                    // Parse simples de linha CSV respeitando aspas
+                    let cols = [];
+                    let current = '';
+                    let inQuotes = false;
+                    for (let c = 0; c < line.length; c++) {
+                        let char = line[c];
+                        if (char === '"') { inQuotes = !inQuotes; }
+                        else if (char === ',' && !inQuotes) {
+                            cols.push(current.trim().replace(/^"|"$/g, ''));
+                            current = '';
+                        } else { current += char; }
+                    }
+                    cols.push(current.trim().replace(/^"|"$/g, ''));
+
+                    if (cols.length >= 5) {
+                        const [sku, nome, qtd, min, custo] = cols;
+
+                        // Verifica limite de demonstração
+                        if (produtosCache.length >= 5) {
+                            alert(`⚠️ Atingido o limite de 5 produtos da Versão de Demonstração.\n\n${sucessos} produtos foram importados com sucesso até o bloqueio.`);
+                            window.open("https://wa.me/5521967860665?text=Olá! Testei a importação de planilha no estoque e quero contratar o sistema completo e ilimitado.", "_blank");
+                            break;
+                        }
+
+                        const novoProduto = {
+                            sku: sku,
+                            nome: nome,
+                            qtd: parseInt(qtd) || 0,
+                            min: parseInt(min) || 0,
+                            custo: parseFloat(custo) || 0
+                        };
+
+                        const { error } = await _supabase.from('produtos').insert([novoProduto]);
+                        if (!error) {
+                            sucessos++;
+                            produtosCache.push(novoProduto); // Atualiza cache local provisório
+                        } else {
+                            erros++;
+                        }
+                    }
+                }
+
+                alert(`Importação concluída! ${sucessos} produtos adicionados com sucesso.${erros > 0 ? ' (' + erros + ' com erro)' : ''}`);
+                event.target.value = ''; // Limpa o seletor de ficheiro
+                carregarProdutos();
+            };
+            reader.readAsText(file);
         }
 
         function iniciarLeitorBarcode() {
