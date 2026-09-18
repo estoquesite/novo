@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Html5-qrcode para leitura de código de barras -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body class="bg-gray-50 min-h-screen text-gray-800">
     <div class="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
@@ -16,10 +18,15 @@
         <header class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">Controle de Estoque Inteligente</h1>
-                <p class="text-sm text-gray-500">Painel Operacional Sincronizado na Nuvem</p>
+                <p class="text-sm text-gray-500">Painel Operacional com Leitor, Fotos e Exportação</p>
             </div>
-            <div id="status-conexao" class="px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
-                A ligar à nuvem...
+            <div class="flex items-center gap-3">
+                <button onclick="exportarCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm flex items-center gap-2">
+                    📊 Exportar para Planilha
+                </button>
+                <div id="status-conexao" class="px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                    A ligar à nuvem...
+                </div>
             </div>
         </header>
 
@@ -42,14 +49,25 @@
         <!-- Formulário e Tabela -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            <!-- Adicionar Produto -->
+            <!-- Adicionar / Editar Produto -->
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
-                <h2 class="text-lg font-semibold text-gray-900 mb-4">Adicionar Produto</h2>
+                <h2 id="form-titulo" class="text-lg font-semibold text-gray-900 mb-4">Adicionar Produto</h2>
                 <form id="form-produto" class="space-y-4">
+                    <input type="hidden" id="edit-id">
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Código (SKU)</label>
-                        <input type="text" id="sku" required placeholder="Ex: PRD-001" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                        <div class="flex gap-2">
+                            <input type="text" id="sku" required placeholder="Ex: PRD-001" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            <button type="button" onclick="iniciarLeitorBarcode()" class="bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg text-xs font-medium text-gray-700 transition" title="Ler Código de Barras">📷 Ler</button>
+                        </div>
                     </div>
+
+                    <!-- Leitor de Código de Barras (Janela Modal / Div) -->
+                    <div id="reader-container" class="hidden border border-gray-200 rounded-lg p-2 bg-gray-50">
+                        <div id="reader" style="width: 100%;"></div>
+                        <button type="button" onclick="pararLeitorBarcode()" class="mt-2 w-full bg-red-50 hover:bg-red-100 text-red-600 py-1 rounded text-xs font-medium">Fechar Leitor</button>
+                    </div>
+
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Nome do Material</label>
                         <input type="text" id="nome" required placeholder="Ex: Rolamento 6204" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
@@ -68,9 +86,19 @@
                         <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Custo Unitário (R$)</label>
                         <input type="number" id="custo" required step="0.01" min="0" placeholder="0,00" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                     </div>
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition text-sm shadow-sm">
-                        Salvar Produto
-                    </button>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Fotografia do Produto</label>
+                        <input type="file" id="foto-file" accept="image/*" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button type="submit" id="btn-submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition text-sm shadow-sm">
+                            Salvar Produto
+                        </button>
+                        <button type="button" id="btn-cancelar" onclick="cancelarEdicao()" class="hidden bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2.5 rounded-lg text-sm transition">
+                            Cancelar
+                        </button>
+                    </div>
                 </form>
             </div>
 
@@ -85,6 +113,7 @@
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase">
+                                <th class="py-3 px-2">Foto</th>
                                 <th class="py-3 px-2">SKU / Produto</th>
                                 <th class="py-3 px-2 text-center">Qtd</th>
                                 <th class="py-3 px-2 text-center">Mín</th>
@@ -96,7 +125,7 @@
                         </thead>
                         <tbody id="tabela-produtos" class="divide-y divide-gray-50 text-sm">
                             <tr>
-                                <td colspan="7" class="py-8 text-center text-gray-400">Carregando dados da nuvem...</td>
+                                <td colspan="8" class="py-8 text-center text-gray-400">Carregando dados da nuvem...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -106,7 +135,7 @@
         </div>
     </div>
 
-    <!-- Script de Ligação ao Supabase -->
+    <!-- Script de Ligação e Funcionalidades -->
     <script>
         const SUPABASE_URL = 'https://vicftmayscxpdojolrql.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_aaDp_kBwagtc5EqWTDmZIw_Me8DsPO0';
@@ -115,6 +144,7 @@
         const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let produtosCache = [];
+        let html5QrCode = null;
 
         async function carregarProdutos() {
             const statusEl = document.getElementById('status-conexao');
@@ -138,15 +168,18 @@
         function renderizarTabela(lista) {
             const tbody = document.getElementById('tabela-produtos');
             if (lista.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-gray-400">Nenhum produto registado.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-gray-400">Nenhum produto registado.</td></tr>`;
                 return;
             }
 
             tbody.innerHTML = lista.map(p => {
                 const totalItem = (p.qtd || 0) * (p.custo || 0);
                 const abaixoMin = (p.qtd || 0) < (p.min || 0);
+                const fotoHtml = p.foto ? `<img src="${p.foto}" class="w-10 h-10 object-cover rounded-lg border border-gray-100">` : `<div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-xs text-gray-400">Sem foto</div>`;
+                
                 return `
                     <tr class="hover:bg-gray-50/50 transition">
+                        <td class="py-3 px-2">${fotoHtml}</td>
                         <td class="py-3 px-2">
                             <div class="font-medium text-gray-900">${p.nome}</div>
                             <div class="text-xs text-gray-400">${p.sku}</div>
@@ -160,7 +193,8 @@
                                 ${abaixoMin ? 'Baixo' : 'Normal'}
                             </span>
                         </td>
-                        <td class="py-3 px-2 text-center">
+                        <td class="py-3 px-2 text-center space-x-2">
+                            <button onclick="prepararEdicao(${p.id})" class="text-blue-600 hover:text-blue-800 text-xs font-medium transition">Editar</button>
                             <button onclick="apagarProduto(${p.id})" class="text-gray-400 hover:text-red-600 text-xs font-medium transition">Excluir</button>
                         </td>
                     </tr>
@@ -178,9 +212,30 @@
             document.getElementById('alertas-ruptura').textContent = rupturas;
         }
 
+        // Submeter Formulário (Criar ou Atualizar)
         document.getElementById('form-produto').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const novoProduto = {
+            const editId = document.getElementById('edit-id').value;
+            const fileInput = document.getElementById('foto-file');
+            let fotoUrl = null;
+
+            // Se selecionou foto, faz upload para o Supabase Storage
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const fileName = `${Date.now()}-${file.name}`;
+                const { data: uploadData, error: uploadError } = await _supabase.storage.from('fotos').upload(fileName, file);
+                
+                if (uploadError) {
+                    alert('Erro ao enviar foto: ' + uploadError.message);
+                    return;
+                }
+                
+                // Obter link público da foto
+                const { data: publicUrlData } = _supabase.storage.from('fotos').getPublicUrl(fileName);
+                fotoUrl = publicUrlData.publicUrl;
+            }
+
+            const dadosProduto = {
                 sku: document.getElementById('sku').value,
                 nome: document.getElementById('nome').value,
                 qtd: parseInt(document.getElementById('qtd').value),
@@ -188,24 +243,106 @@
                 custo: parseFloat(document.getElementById('custo').value)
             };
 
-            const { error } = await _supabase.from('produtos').insert([novoProduto]);
-            if (error) {
-                alert('Erro ao guardar produto: ' + error.message);
-                return;
+            if (fotoUrl) dadosProduto.foto = fotoUrl;
+
+            if (editId) {
+                // Atualizar
+                const { error } = await _supabase.from('produtos').update(dadosProduto).eq('id', editId);
+                if (error) { alert('Erro ao atualizar: ' + error.message); return; }
+            } else {
+                // Inserir novo
+                const { error } = await _supabase.from('produtos').insert([dadosProduto]);
+                if (error) { alert('Erro ao guardar: ' + error.message); return; }
             }
 
-            document.getElementById('form-produto').reset();
+            cancelarEdicao();
             carregarProdutos();
         });
+
+        function prepararEdicao(id) {
+            const p = produtosCache.find(item => item.id === id);
+            if (!p) return;
+
+            document.getElementById('edit-id').value = p.id;
+            document.getElementById('sku').value = p.sku;
+            document.getElementById('nome').value = p.nome;
+            document.getElementById('qtd').value = p.qtd;
+            document.getElementById('min').value = p.min;
+            document.getElementById('custo').value = p.custo;
+
+            document.getElementById('form-titulo').textContent = 'Editar Produto';
+            document.getElementById('btn-submit').textContent = 'Atualizar Produto';
+            document.getElementById('btn-cancelar').classList.remove('hidden');
+        }
+
+        function cancelarEdicao() {
+            document.getElementById('form-produto').reset();
+            document.getElementById('edit-id').value = '';
+            document.getElementById('form-titulo').textContent = 'Adicionar Produto';
+            document.getElementById('btn-submit').textContent = 'Salvar Produto';
+            document.getElementById('btn-cancelar').classList.add('hidden');
+        }
 
         async function apagarProduto(id) {
             if (!confirm('Tens a certeza que pretendes excluir este produto?')) return;
             const { error } = await _supabase.from('produtos').delete().eq('id', id);
-            if (error) {
-                alert('Erro ao excluir: ' + error.message);
+            if (error) { alert('Erro ao excluir: ' + error.message); return; }
+            carregarProdutos();
+        }
+
+        // Exportar para CSV (Compatível com Google Sheets / Excel)
+        function exportarCSV() {
+            if (produtosCache.length === 0) {
+                alert('Não há dados para exportar.');
                 return;
             }
-            carregarProdutos();
+
+            let csvContent = "data:text/csv;charset=utf-8,SKU,Nome,Quantidade,Minimo,Custo,Total\n";
+            produtosCache.forEach(p => {
+                const total = (p.qtd || 0) * (p.custo || 0);
+                csvContent += `"${p.sku}","${p.nome}",${p.qtd},${p.min},${p.custo},${total}\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "inventario_estoque.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Leitor de Código de Barras via Câmara
+        function iniciarLeitorBarcode() {
+            const container = document.getElementById('reader-container');
+            container.classList.remove('hidden');
+            
+            html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 100 } },
+                (decodedText) => {
+                    document.getElementById('sku').value = decodedText;
+                    pararLeitorBarcode();
+                },
+                (errorMessage) => {
+                    // Ignora erros de leitura contínua
+                }
+            ).catch(err => {
+                alert('Erro ao iniciar câmara: ' + err);
+            });
+        }
+
+        function pararLeitorBarcode() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    document.getElementById('reader-container').classList.add('hidden');
+                }).catch(err => {
+                    document.getElementById('reader-container').classList.add('hidden');
+                });
+            } else {
+                document.getElementById('reader-container').classList.add('hidden');
+            }
         }
 
         document.getElementById('pesquisa').addEventListener('input', (e) => {
