@@ -30,8 +30,8 @@
             </div>
         </header>
 
-        <!-- Indicadores / Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Indicadores / Cards (Incluindo o Contador de Acessos) -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <p class="text-sm font-medium text-gray-500">Total de Itens</p>
                 <p id="total-itens" class="text-3xl font-bold text-gray-900 mt-2">0</p>
@@ -43,6 +43,10 @@
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <p class="text-sm font-medium text-gray-500">Alertas de Ruptura</p>
                 <p id="alertas-ruptura" class="text-3xl font-bold text-red-600 mt-2">0</p>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <p class="text-sm font-medium text-gray-500">Acessos à Página</p>
+                <p id="contador-visitas" class="text-3xl font-bold text-blue-600 mt-2">...</p>
             </div>
         </div>
 
@@ -88,7 +92,6 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Tirar Foto do Produto (Câmara)</label>
-                        <!-- capture="environment" força o telemóvel a abrir a câmara na hora -->
                         <input type="file" id="foto-file" accept="image/*" capture="environment" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                     </div>
 
@@ -146,6 +149,28 @@
 
         let produtosCache = [];
         let html5QrCode = null;
+
+        async function registrarEContarVisitas() {
+            try {
+                // Tenta ler o contador com id = 1
+                let { data, error } = await _supabase.from('contador').select('visitas').eq('id', 1).single();
+                
+                let totalVisitas = 1;
+                if (data) {
+                    totalVisitas = (data.visitas || 0) + 1;
+                    await _supabase.from('contador').update({ visitas: totalVisitas }).eq('id', 1);
+                } else {
+                    // Se não existir, insere o primeiro registo
+                    await _supabase.from('contador').insert([{ id: 1, visitas: 1 }]);
+                }
+                document.getElementById('contador-visitas').textContent = totalVisitas;
+            } catch (err) {
+                // Fallback local se a tabela contador não for criada no Supabase ainda
+                let localVisitas = parseInt(localStorage.getItem('visitas_demo') || '0') + 1;
+                localStorage.setItem('visitas_demo', localVisitas);
+                document.getElementById('contador-visitas').textContent = localVisitas;
+            }
+        }
 
         async function carregarProdutos() {
             const statusEl = document.getElementById('status-conexao');
@@ -213,7 +238,6 @@
             document.getElementById('alertas-ruptura').textContent = rupturas;
         }
 
-        // Submeter Formulário com Restrição de Demonstração (Limite de 5 produtos)
         document.getElementById('form-produto').addEventListener('submit', async (e) => {
             e.preventDefault();
             const editId = document.getElementById('edit-id').value;
@@ -353,6 +377,8 @@
             renderizarTabela(filtrados);
         });
 
+        // Inicializar dados e contador
+        registrarEContarVisitas();
         carregarProdutos();
     </script>
 </body>
