@@ -3,158 +3,182 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle de Estoque - Sistema Comercial</title>
+    <title>Controle de Estoque Inteligente</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Biblioteca oficial do Supabase -->
+    <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-gray-100 font-sans">
-
-    <div class="max-w-6xl mx-auto p-6">
-        <header class="flex justify-between items-center mb-8 bg-white p-6 rounded-xl shadow-sm">
+<body class="bg-gray-50 min-h-screen text-gray-800">
+    <div class="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
+        
+        <!-- Cabeçalho -->
+        <header class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-                <h1 class="text-2xl font-bold text-gray-800">Controle de Estoque Inteligente</h1>
+                <h1 class="text-2xl font-bold text-gray-900">Controle de Estoque Inteligente</h1>
                 <p class="text-sm text-gray-500">Painel Operacional Sincronizado na Nuvem</p>
             </div>
-            <span class="bg-emerald-100 text-emerald-800 text-xs font-semibold px-3 py-1 rounded-full">Online (Supabase Ativo)</span>
+            <div id="status-conexao" class="px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                A ligar à nuvem...
+            </div>
         </header>
 
-        <!-- Cards de Indicadores -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500">
+        <!-- Indicadores / Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <p class="text-sm font-medium text-gray-500">Total de Itens</p>
-                <h3 id="totalItens" class="text-3xl font-bold text-gray-800 mt-1">0</h3>
+                <p id="total-itens" class="text-3xl font-bold text-gray-900 mt-2">0</p>
             </div>
-            <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-amber-500">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <p class="text-sm font-medium text-gray-500">Valor em Estoque</p>
-                <h3 id="valorTotal" class="text-3xl font-bold text-gray-800 mt-1">R$ 0,00</h3>
+                <p id="valor-total" class="text-3xl font-bold text-gray-900 mt-2">R$ 0,00</p>
             </div>
-            <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-rose-500">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <p class="text-sm font-medium text-gray-500">Alertas de Ruptura</p>
-                <h3 id="totalAlertas" class="text-3xl font-bold text-rose-600 mt-1">0</h3>
+                <p id="alertas-ruptura" class="text-3xl font-bold text-red-600 mt-2">0</p>
             </div>
         </div>
 
         <!-- Formulário e Tabela -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="bg-white p-6 rounded-xl shadow-sm h-fit">
-                <h2 class="text-lg font-semibold text-gray-800 mb-4">Adicionar Produto</h2>
-                <form id="formProduto" class="space-y-4">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Adicionar Produto -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Adicionar Produto</h2>
+                <form id="form-produto" class="space-y-4">
                     <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Código (SKU)</label>
-                        <input type="text" id="sku" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: PRD-001">
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Código (SKU)</label>
+                        <input type="text" id="sku" required placeholder="Ex: PRD-001" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Nome do Material</label>
-                        <input type="text" id="nome" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: Rolamento 6204">
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Nome do Material</label>
+                        <input type="text" id="nome" required placeholder="Ex: Rolamento 6204" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                     </div>
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Quantidade</label>
-                            <input type="number" id="qtd" min="0" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0">
+                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Quantidade</label>
+                            <input type="number" id="qtd" required min="0" placeholder="0" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Estoque Mínimo</label>
-                            <input type="number" id="min" min="0" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0">
+                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Estoque Mínimo</label>
+                            <input type="number" id="min" required min="0" placeholder="0" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                         </div>
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Custo Unitário (R$)</label>
-                        <input type="number" id="custo" step="0.01" min="0" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0.00">
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Custo Unitário (R$)</label>
+                        <input type="number" id="custo" required step="0.01" min="0" placeholder="0,00" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                     </div>
-                    <button type="submit" class="w-full bg-blue-600 text-white font-medium py-2 px-4 rounded-lg text-sm hover:bg-blue-700 transition">Salvar no Sistema</button>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition text-sm shadow-sm">
+                        Salvar Produto
+                    </button>
                 </form>
             </div>
 
-            <div class="bg-white p-6 rounded-xl shadow-sm lg:col-span-2">
-                <h2 class="text-lg font-semibold text-gray-800 mb-4">Inventário Atual</h2>
+            <!-- Inventário Atual -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 lg:col-span-2">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900">Inventário Atual</h2>
+                    <input type="text" id="pesquisa" placeholder="Pesquisar por SKU ou Nome..." class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64">
+                </div>
+
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="border-b border-gray-200 text-xs text-gray-500 uppercase">
+                            <tr class="border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase">
                                 <th class="py-3 px-2">SKU / Produto</th>
-                                <th class="py-3 px-2">Qtd</th>
-                                <th class="py-3 px-2">Mín</th>
-                                <th class="py-3 px-2">Custo</th>
-                                <th class="py-3 px-2">Total</th>
-                                <th class="py-3 px-2">Status</th>
+                                <th class="py-3 px-2 text-center">Qtd</th>
+                                <th class="py-3 px-2 text-center">Mín</th>
+                                <th class="py-3 px-2 text-right">Custo</th>
+                                <th class="py-3 px-2 text-right">Total</th>
+                                <th class="py-3 px-2 text-center">Status</th>
                                 <th class="py-3 px-2 text-center">Ações</th>
                             </tr>
                         </thead>
-                        <tbody id="tabelaEstoque" class="text-sm divide-y divide-gray-100">
-                            <tr><td colspan="7" class="py-6 text-center text-gray-400">Carregando dados da nuvem...</td></tr>
+                        <tbody id="tabela-produtos" class="divide-y divide-gray-50 text-sm">
+                            <tr>
+                                <td colspan="7" class="py-8 text-center text-gray-400">Carregando dados da nuvem...</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
+
         </div>
     </div>
 
+    <!-- Script de Ligação ao Supabase -->
     <script>
-        // Suas credenciais seguras do Supabase
-        const SUPABASE_URL = 'https://vicftmaycxpdojolrql.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_aaDp_kBwagtc5EqWTDmZIw_Me8DsPO0';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const SUPABASE_URL = 'https://vicftmayscxpdojolrql.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_aaDp_kBwagtc5EqWTDmZIw_Me8DsPO0';
+        
+        const { createClient } = supabase;
+        const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        const form = document.getElementById('formProduto');
-        const tabela = document.getElementById('tabelaEstoque');
-        const totalItensEl = document.getElementById('totalItens');
-        const valorTotalEl = document.getElementById('valorTotal');
-        const totalAlertasEl = document.getElementById('totalAlertas');
+        let produtosCache = [];
 
-        async function carregarEstoque() {
-            const { data: produtos, error } = await supabase.from('produtos').select('*');
-            
-            if (error) {
-                console.error('Erro ao buscar:', error);
-                tabela.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-rose-500 text-sm">Erro ao conectar à base de dados.</td></tr>`;
+        async function carregarProdutos() {
+            const statusEl = document.getElementById('status-conexao');
+            try {
+                const { data, error } = await _supabase.from('produtos').select('*').order('id', { ascending: false });
+                if (error) throw error;
+
+                produtosCache = data || [];
+                renderizarTabela(produtosCache);
+                atualizarMetricas(produtosCache);
+
+                statusEl.className = "px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200";
+                statusEl.textContent = "Online (Supabase Ativo)";
+            } catch (err) {
+                console.error('Erro ao carregar:', err);
+                statusEl.className = "px-3 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200";
+                statusEl.textContent = "Erro de Ligação";
+            }
+        }
+
+        function renderizarTabela(lista) {
+            const tbody = document.getElementById('tabela-produtos');
+            if (lista.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-gray-400">Nenhum produto registado.</td></tr>`;
                 return;
             }
 
-            tabela.innerHTML = '';
-            let totalQtd = 0;
-            let valorAcumulado = 0;
-            let alertas = 0;
-
-            if (!produtos || produtos.length === 0) {
-                tabela.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-gray-400 text-sm">Nenhum produto cadastrado no estoque.</td></tr>`;
-            } else {
-                produtos.forEach((p) => {
-                    const totalItem = (p.qtd || 0) * (p.custo || 0);
-                    totalQtd += parseInt(p.qtd || 0);
-                    valorAcumulado += totalItem;
-
-                    let statusBadge = '<span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded-full font-medium">Normal</span>';
-                    if (parseInt(p.qtd || 0) <= parseInt(p.min || 0)) {
-                        statusBadge = '<span class="bg-rose-100 text-rose-800 text-xs px-2.5 py-1 rounded-full font-medium">Repor</span>';
-                        alertas++;
-                    }
-
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
+            tbody.innerHTML = lista.map(p => {
+                const totalItem = (p.qtd || 0) * (p.custo || 0);
+                const abaixoMin = (p.qtd || 0) < (p.min || 0);
+                return `
+                    <tr class="hover:bg-gray-50/50 transition">
                         <td class="py-3 px-2">
-                            <div class="font-medium text-gray-800">${p.nome || ''}</div>
-                            <div class="text-xs text-gray-400">SKU: ${p.sku || ''}</div>
+                            <div class="font-medium text-gray-900">${p.nome}</div>
+                            <div class="text-xs text-gray-400">${p.sku}</div>
                         </td>
-                        <td class="py-3 px-2 font-semibold text-gray-700">${p.qtd || 0}</td>
-                        <td class="py-3 px-2 text-gray-500">${p.min || 0}</td>
-                        <td class="py-3 px-2 text-gray-600">R$ ${parseFloat(p.custo || 0).toFixed(2)}</td>
-                        <td class="py-3 px-2 text-gray-800 font-medium">R$ ${totalItem.toFixed(2)}</td>
-                        <td class="py-3 px-2">${statusBadge}</td>
+                        <td class="py-3 px-2 text-center font-medium">${p.qtd}</td>
+                        <td class="py-3 px-2 text-center text-gray-500">${p.min}</td>
+                        <td class="py-3 px-2 text-right">R$ ${Number(p.custo).toFixed(2)}</td>
+                        <td class="py-3 px-2 text-right font-medium">R$ ${totalItem.toFixed(2)}</td>
                         <td class="py-3 px-2 text-center">
-                            <button onclick="removerProduto('${p.id}')" class="text-gray-400 hover:text-rose-600 text-xs font-semibold px-2 py-1">Excluir</button>
+                            <span class="px-2 py-1 rounded-full text-xs font-medium ${abaixoMin ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}">
+                                ${abaixoMin ? 'Baixo' : 'Normal'}
+                            </span>
                         </td>
-                    `;
-                    tabela.appendChild(tr);
-                });
-            }
-
-            totalItensEl.innerText = totalQtd;
-            valorTotalEl.innerText = `R$ ${valorAcumulado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-            totalAlertasEl.innerText = alertas;
+                        <td class="py-3 px-2 text-center">
+                            <button onclick="apagarProduto(${p.id})" class="text-gray-400 hover:text-red-600 text-xs font-medium transition">Excluir</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
 
-        form.addEventListener('submit', async (e) => {
+        function atualizarMetricas(lista) {
+            const totalItens = lista.reduce((acc, p) => acc + (Number(p.qtd) || 0), 0);
+            const valorTotal = lista.reduce((acc, p) => acc + ((Number(p.qtd) || 0) * (Number(p.custo) || 0)), 0);
+            const rupturas = lista.filter(p => (Number(p.qtd) || 0) < (Number(p.min) || 0)).length;
+
+            document.getElementById('total-itens').textContent = totalItens;
+            document.getElementById('valor-total').textContent = `R$ ${valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            document.getElementById('alertas-ruptura').textContent = rupturas;
+        }
+
+        document.getElementById('form-produto').addEventListener('submit', async (e) => {
             e.preventDefault();
             const novoProduto = {
                 sku: document.getElementById('sku').value,
@@ -164,27 +188,35 @@
                 custo: parseFloat(document.getElementById('custo').value)
             };
 
-            const { error } = await supabase.from('produtos').insert([novoProduto]);
+            const { error } = await _supabase.from('produtos').insert([novoProduto]);
             if (error) {
-                alert('Erro ao salvar no Supabase. Verifique os campos.');
-                console.error(error);
-            } else {
-                form.reset();
-                carregarEstoque();
+                alert('Erro ao guardar produto: ' + error.message);
+                return;
             }
+
+            document.getElementById('form-produto').reset();
+            carregarProdutos();
         });
 
-        async function removerProduto(id) {
-            const { error } = await supabase.from('produtos').delete().eq('id', id);
+        async function apagarProduto(id) {
+            if (!confirm('Tens a certeza que pretendes excluir este produto?')) return;
+            const { error } = await _supabase.from('produtos').delete().eq('id', id);
             if (error) {
-                alert('Erro ao excluir item.');
-                console.error(error);
-            } else {
-                carregarEstoque();
+                alert('Erro ao excluir: ' + error.message);
+                return;
             }
+            carregarProdutos();
         }
 
-        carregarEstoque();
+        document.getElementById('pesquisa').addEventListener('input', (e) => {
+            const termo = e.target.value.toLowerCase();
+            const filtrados = produtosCache.filter(p => 
+                p.nome.toLowerCase().includes(termo) || p.sku.toLowerCase().includes(termo)
+            );
+            renderizarTabela(filtrados);
+        });
+
+        carregarProdutos();
     </script>
 </body>
 </html>
