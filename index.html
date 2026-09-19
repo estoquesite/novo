@@ -37,113 +37,195 @@
             </div>
         </header>
 
-        <!-- Indicadores / Cards (Incluindo o Contador de Acessos) -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <p class="text-sm font-medium text-gray-500">Total de Itens</p>
-                <p id="total-itens" class="text-3xl font-bold text-gray-900 mt-2">0</p>
+        <!-- Navegação por Abas (Tabs) -->
+        <div class="flex border-b border-gray-200">
+            <button onclick="mudarAba('estoque')" id="tab-estoque" class="px-6 py-3 font-semibold text-sm border-b-2 border-blue-600 text-blue-600 transition">
+                📦 Gestão de Estoque
+            </button>
+            <button onclick="mudarAba('indicadores')" id="tab-indicadores" class="px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition">
+                📈 Indicadores e Relatórios
+            </button>
+        </div>
+
+        <!-- ABA 1: GESTÃO DE ESTOQUE -->
+        <div id="secao-estoque" class="space-y-6">
+            <!-- Indicadores Rápidos -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <p class="text-sm font-medium text-gray-500">Total de Itens</p>
+                    <p id="total-itens" class="text-3xl font-bold text-gray-900 mt-2">0</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <p class="text-sm font-medium text-gray-500">Valor em Estoque</p>
+                    <p id="valor-total" class="text-3xl font-bold text-gray-900 mt-2">R$ 0,00</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <p class="text-sm font-medium text-gray-500">Alertas de Ruptura</p>
+                    <p id="alertas-ruptura" class="text-3xl font-bold text-red-600 mt-2">0</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <p class="text-sm font-medium text-gray-500">Acessos à Página</p>
+                    <p id="contador-visitas" class="text-3xl font-bold text-blue-600 mt-2">...</p>
+                </div>
             </div>
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <p class="text-sm font-medium text-gray-500">Valor em Estoque</p>
-                <p id="valor-total" class="text-3xl font-bold text-gray-900 mt-2">R$ 0,00</p>
-            </div>
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <p class="text-sm font-medium text-gray-500">Alertas de Ruptura</p>
-                <p id="alertas-ruptura" class="text-3xl font-bold text-red-600 mt-2">0</p>
-            </div>
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <p class="text-sm font-medium text-gray-500">Acessos à Página</p>
-                <p id="contador-visitas" class="text-3xl font-bold text-blue-600 mt-2">...</p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Adicionar / Editar Produto -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
+                    <h2 id="form-titulo" class="text-lg font-semibold text-gray-900 mb-4">Adicionar Produto</h2>
+                    <form id="form-produto" class="space-y-4">
+                        <input type="hidden" id="edit-id">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Código (SKU)</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="sku" required placeholder="Ex: PRD-001" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                <button type="button" onclick="iniciarLeitorBarcode()" class="bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg text-xs font-medium text-gray-700 transition" title="Ler Código de Barras">📷 Ler</button>
+                            </div>
+                        </div>
+
+                        <!-- Leitor de Código de Barras -->
+                        <div id="reader-container" class="hidden border border-gray-200 rounded-lg p-2 bg-gray-50">
+                            <div id="reader" style="width: 100%;"></div>
+                            <button type="button" onclick="pararLeitorBarcode()" class="mt-2 w-full bg-red-50 hover:bg-red-100 text-red-600 py-1 rounded text-xs font-medium">Fechar Leitor</button>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Nome do Material</label>
+                            <input type="text" id="nome" required placeholder="Ex: Rolamento 6204" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Quantidade</label>
+                                <input type="number" id="qtd" required min="0" placeholder="0" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Estoque Mínimo</label>
+                                <input type="number" id="min" required min="0" placeholder="0" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Custo Unitário (R$)</label>
+                            <input type="number" id="custo" required step="0.01" min="0" placeholder="0,00" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Tirar Foto do Produto (Câmara)</label>
+                            <input type="file" id="foto-file" accept="image/*" capture="environment" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button type="submit" id="btn-submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition text-sm shadow-sm">
+                                Salvar Produto
+                            </button>
+                            <button type="button" id="btn-cancelar" onclick="cancelarEdicao()" class="hidden bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2.5 rounded-lg text-sm transition">
+                                Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Inventário Atual -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 lg:col-span-2">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                        <h2 class="text-lg font-semibold text-gray-900">Inventário Atual</h2>
+                        <input type="text" id="pesquisa" placeholder="Pesquisar por SKU ou Nome..." class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64">
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase">
+                                    <th class="py-3 px-2">Foto</th>
+                                    <th class="py-3 px-2">SKU / Produto</th>
+                                    <th class="py-3 px-2 text-center">Qtd</th>
+                                    <th class="py-3 px-2 text-center">Mín</th>
+                                    <th class="py-3 px-2 text-right">Custo</th>
+                                    <th class="py-3 px-2 text-right">Total</th>
+                                    <th class="py-3 px-2 text-center">Status</th>
+                                    <th class="py-3 px-2 text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-produtos" class="divide-y divide-gray-50 text-sm">
+                                <tr>
+                                    <td colspan="8" class="py-8 text-center text-gray-400">Carregando dados da nuvem...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Formulário e Tabela -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            <!-- Adicionar / Editar Produto -->
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
-                <h2 id="form-titulo" class="text-lg font-semibold text-gray-900 mb-4">Adicionar Produto</h2>
-                <form id="form-produto" class="space-y-4">
-                    <input type="hidden" id="edit-id">
+        <!-- ABA 2: INDICADORES E RELATÓRIOS -->
+        <div id="secao-indicadores" class="space-y-6 hidden">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Filtros Avançados de Indicadores</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Código (SKU)</label>
-                        <div class="flex gap-2">
-                            <input type="text" id="sku" required placeholder="Ex: PRD-001" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                            <button type="button" onclick="iniciarLeitorBarcode()" class="bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg text-xs font-medium text-gray-700 transition" title="Ler Código de Barras">📷 Ler</button>
-                        </div>
-                    </div>
-
-                    <!-- Leitor de Código de Barras -->
-                    <div id="reader-container" class="hidden border border-gray-200 rounded-lg p-2 bg-gray-50">
-                        <div id="reader" style="width: 100%;"></div>
-                        <button type="button" onclick="pararLeitorBarcode()" class="mt-2 w-full bg-red-50 hover:bg-red-100 text-red-600 py-1 rounded text-xs font-medium">Fechar Leitor</button>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Nome do Material</label>
-                        <input type="text" id="nome" required placeholder="Ex: Rolamento 6204" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Quantidade</label>
-                            <input type="number" id="qtd" required min="0" placeholder="0" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Estoque Mínimo</label>
-                            <input type="number" id="min" required min="0" placeholder="0" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                        </div>
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Filtrar por Status</label>
+                        <select id="filtro-status" onchange="aplicarFiltrosIndicadores()" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="todos">Todos os Produtos</option>
+                            <option value="normal">Estoque Normal</option>
+                            <option value="baixo">Abaixo do Mínimo (Ruptura)</option>
+                        </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Custo Unitário (R$)</label>
-                        <input type="number" id="custo" required step="0.01" min="0" placeholder="0,00" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Ordenar por</label>
+                        <select id="filtro-ordenacao" onchange="aplicarFiltrosIndicadores()" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="recente">Mais Recentes</option>
+                            <option value="maior-valor">Maior Valor Total (R$)</option>
+                            <option value="menor-valor">Menor Valor Total (R$)</option>
+                            <option value="maior-qtd">Maior Quantidade</option>
+                        </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Tirar Foto do Produto (Câmara)</label>
-                        <input type="file" id="foto-file" accept="image/*" capture="environment" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Pesquisa Rápida</label>
+                        <input type="text" id="filtro-texto" oninput="aplicarFiltrosIndicadores()" placeholder="Nome ou SKU..." class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
-
-                    <div class="flex gap-2">
-                        <button type="submit" id="btn-submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition text-sm shadow-sm">
-                            Salvar Produto
-                        </button>
-                        <button type="button" id="btn-cancelar" onclick="cancelarEdicao()" class="hidden bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2.5 rounded-lg text-sm transition">
-                            Cancelar
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
 
-            <!-- Inventário Atual -->
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 lg:col-span-2">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                    <h2 class="text-lg font-semibold text-gray-900">Inventário Atual</h2>
-                    <input type="text" id="pesquisa" placeholder="Pesquisar por SKU ou Nome..." class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64">
+            <!-- Resumo Analítico Detalhado -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <p class="text-sm font-medium text-gray-500">Média de Custo Unitário</p>
+                    <p id="ind-media-custo" class="text-2xl font-bold text-gray-900 mt-2">R$ 0,00</p>
                 </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <p class="text-sm font-medium text-gray-500">Total de Produtos Cadastrados</p>
+                    <p id="ind-total-cadastros" class="text-2xl font-bold text-gray-900 mt-2">0</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <p class="text-sm font-medium text-gray-500">Taxa de Ruptura (Alerta)</p>
+                    <p id="ind-taxa-ruptura" class="text-2xl font-bold text-red-600 mt-2">0%</p>
+                </div>
+            </div>
 
+            <!-- Tabela Relatório -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <h3 class="text-md font-semibold text-gray-900 mb-4">Relatório Consolidado de Estoque</h3>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase">
-                                <th class="py-3 px-2">Foto</th>
-                                <th class="py-3 px-2">SKU / Produto</th>
-                                <th class="py-3 px-2 text-center">Qtd</th>
-                                <th class="py-3 px-2 text-center">Mín</th>
-                                <th class="py-3 px-2 text-right">Custo</th>
-                                <th class="py-3 px-2 text-right">Total</th>
+                                <th class="py-3 px-2">SKU</th>
+                                <th class="py-3 px-2">Nome do Produto</th>
+                                <th class="py-3 px-2 text-center">Quantidade</th>
+                                <th class="py-3 px-2 text-center">Mínimo</th>
+                                <th class="py-3 px-2 text-right">Custo Unitário</th>
+                                <th class="py-3 px-2 text-right">Valor Total</th>
                                 <th class="py-3 px-2 text-center">Status</th>
-                                <th class="py-3 px-2 text-center">Ações</th>
                             </tr>
                         </thead>
-                        <tbody id="tabela-produtos" class="divide-y divide-gray-50 text-sm">
+                        <tbody id="tabela-indicadores" class="divide-y divide-gray-50 text-sm">
                             <tr>
-                                <td colspan="8" class="py-8 text-center text-gray-400">Carregando dados da nuvem...</td>
+                                <td colspan="7" class="py-8 text-center text-gray-400">A carregar indicadores...</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
-
         </div>
+
     </div>
 
     <!-- Script de Ligação e Funcionalidades -->
@@ -156,6 +238,27 @@
 
         let produtosCache = [];
         let html5QrCode = null;
+
+        // Alternância de Abas
+        function mudarAba(aba) {
+            const btnEstoque = document.getElementById('tab-estoque');
+            const btnIndicadores = document.getElementById('tab-indicadores');
+            const secEstoque = document.getElementById('secao-estoque');
+            const secIndicadores = document.getElementById('secao-indicadores');
+
+            if (aba === 'estoque') {
+                btnEstoque.className = "px-6 py-3 font-semibold text-sm border-b-2 border-blue-600 text-blue-600 transition";
+                btnIndicadores.className = "px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition";
+                secEstoque.classList.remove('hidden');
+                secIndicadores.classList.add('hidden');
+            } else {
+                btnIndicadores.className = "px-6 py-3 font-semibold text-sm border-b-2 border-blue-600 text-blue-600 transition";
+                btnEstoque.className = "px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition";
+                secIndicadores.classList.remove('hidden');
+                secEstoque.classList.add('hidden');
+                renderizarIndicadores();
+            }
+        }
 
         async function registrarEContarVisitas() {
             try {
@@ -184,6 +287,11 @@
                 produtosCache = data || [];
                 renderizarTabela(produtosCache);
                 atualizarMetricas(produtosCache);
+                
+                // Se a aba de indicadores estiver ativa, atualiza também
+                if (!document.getElementById('secao-indicadores').classList.contains('hidden')) {
+                    renderizarIndicadores();
+                }
 
                 statusEl.className = "px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200";
                 statusEl.textContent = "Online (Demonstração Ativa)";
@@ -239,6 +347,76 @@
             document.getElementById('total-itens').textContent = totalItens;
             document.getElementById('valor-total').textContent = `R$ ${valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             document.getElementById('alertas-ruptura').textContent = rupturas;
+        }
+
+        function renderizarIndicadores() {
+            let lista = [...produtosCache];
+
+            // Filtros
+            const statusFiltro = document.getElementById('filtro-status').value;
+            const textoFiltro = document.getElementById('filtro-texto').value.toLowerCase();
+            const ordenacao = document.getElementById('filtro-ordenacao').value;
+
+            if (statusFiltro === 'baixo') {
+                lista = lista.filter(p => (Number(p.qtd) || 0) < (Number(p.min) || 0));
+            } else if (statusFiltro === 'normal') {
+                lista = lista.filter(p => (Number(p.qtd) || 0) >= (Number(p.min) || 0));
+            }
+
+            if (textoFiltro) {
+                lista = lista.filter(p => p.nome.toLowerCase().includes(textoFiltro) || p.sku.toLowerCase().includes(textoFiltro));
+            }
+
+            // Ordenação
+            if (ordenacao === 'maior-valor') {
+                lista.sort((a, b) => ((b.qtd || 0) * (b.custo || 0)) - ((a.qtd || 0) * (a.custo || 0)));
+            } else if (ordenacao === 'menor-valor') {
+                lista.sort((a, b) => ((a.qtd || 0) * (a.custo || 0)) - ((b.qtd || 0) * (b.custo || 0)));
+            } else if (ordenacao === 'maior-qtd') {
+                lista.sort((a, b) => (b.qtd || 0) - (a.qtd || 0));
+            }
+
+            // Métricas Analíticas
+            const totalCadastros = produtosCache.length;
+            const somaCustos = produtosCache.reduce((acc, p) => acc + (Number(p.custo) || 0), 0);
+            const mediaCusto = totalCadastros > 0 ? somaCustos / totalCadastros : 0;
+            const totalRupturas = produtosCache.filter(p => (Number(p.qtd) || 0) < (Number(p.min) || 0)).length;
+            const taxaRuptura = totalCadastros > 0 ? (totalRupturas / totalCadastros) * 100 : 0;
+
+            document.getElementById('ind-media-custo').textContent = `R$ ${mediaCusto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            document.getElementById('ind-total-cadastros').textContent = totalCadastros;
+            document.getElementById('ind-taxa-ruptura').textContent = `${taxaRuptura.toFixed(1)}%`;
+
+            // Tabela Relatório
+            const tbody = document.getElementById('tabela-indicadores');
+            if (lista.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-gray-400">Nenhum produto encontrado com estes filtros.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = lista.map(p => {
+                const totalItem = (p.qtd || 0) * (p.custo || 0);
+                const abaixoMin = (p.qtd || 0) < (p.min || 0);
+                return `
+                    <tr class="hover:bg-gray-50/50 transition">
+                        <td class="py-3 px-2 font-mono text-xs text-gray-600">${p.sku}</td>
+                        <td class="py-3 px-2 font-medium text-gray-900">${p.nome}</td>
+                        <td class="py-3 px-2 text-center font-medium">${p.qtd}</td>
+                        <td class="py-3 px-2 text-center text-gray-500">${p.min}</td>
+                        <td class="py-3 px-2 text-right">R$ ${Number(p.custo).toFixed(2)}</td>
+                        <td class="py-3 px-2 text-right font-medium">R$ ${totalItem.toFixed(2)}</td>
+                        <td class="py-3 px-2 text-center">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium ${abaixoMin ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}">
+                                ${abaixoMin ? 'Baixo' : 'Normal'}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function aplicarFiltrosIndicadores() {
+            renderizarIndicadores();
         }
 
         document.getElementById('form-produto').addEventListener('submit', async (e) => {
@@ -342,7 +520,6 @@
             document.body.removeChild(link);
         }
 
-        // Baixar Template CSV Modelo
         function baixarTemplate() {
             let csvContent = "data:text/csv;charset=utf-8,SKU,Nome,Quantidade,Minimo,Custo\n";
             csvContent += "PRD-001,Exemplo Material A,10,2,25.50\n";
@@ -357,7 +534,6 @@
             document.body.removeChild(link);
         }
 
-        // Importar Planilha CSV Preenchida
         async function importarCSV(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -369,12 +545,10 @@
                 let sucessos = 0;
                 let erros = 0;
 
-                // Começa a partir de i = 1 para ignorar o cabeçalho
                 for (let i = 1; i < lines.length; i++) {
                     const line = lines[i].trim();
                     if (!line) continue;
 
-                    // Parse simples de linha CSV respeitando aspas
                     let cols = [];
                     let current = '';
                     let inQuotes = false;
@@ -391,7 +565,6 @@
                     if (cols.length >= 5) {
                         const [sku, nome, qtd, min, custo] = cols;
 
-                        // Verifica limite de demonstração
                         if (produtosCache.length >= 5) {
                             alert(`⚠️ Atingido o limite de 5 produtos da Versão de Demonstração.\n\n${sucessos} produtos foram importados com sucesso até o bloqueio.`);
                             window.open("https://wa.me/5521967860665?text=Olá! Testei a importação de planilha no estoque e quero contratar o sistema completo e ilimitado.", "_blank");
@@ -409,7 +582,7 @@
                         const { error } = await _supabase.from('produtos').insert([novoProduto]);
                         if (!error) {
                             sucessos++;
-                            produtosCache.push(novoProduto); // Atualiza cache local provisório
+                            produtosCache.push(novoProduto);
                         } else {
                             erros++;
                         }
@@ -417,7 +590,7 @@
                 }
 
                 alert(`Importação concluída! ${sucessos} produtos adicionados com sucesso.${erros > 0 ? ' (' + erros + ' com erro)' : ''}`);
-                event.target.value = ''; // Limpa o seletor de ficheiro
+                event.target.value = '';
                 carregarProdutos();
             };
             reader.readAsText(file);
@@ -433,6 +606,10 @@
                 { fps: 10, qrbox: { width: 250, height: 100 } },
                 (decodedText) => {
                     document.getElementById('sku').value = decodedText;
+                    // Se estiver na aba de estoque, preenche o SKU automaticamente.
+                    // Se quisermos também pesquisar na aba de indicadores via código de barras, podemos ligar aqui:
+                    document.getElementById('filtro-texto').value = decodedText;
+                    aplicarFiltrosIndicadores();
                     pararLeitorBarcode();
                 },
                 (errorMessage) => {}
