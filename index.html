@@ -6,246 +6,233 @@
     <title>Controle de Estoque Inteligente</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Html5-qrcode para leitura de código de barras -->
     <script src="https://unpkg.com/html5-qrcode"></script>
-    <!-- Chart.js para gráficos visuais -->
+    <!-- Chart.js para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-gray-50 min-h-screen text-gray-800">
-    <div class="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
-        
-        <!-- Cabeçalho -->
-        <header class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen text-gray-800 dark:text-gray-100 transition-colors duration-200">
+
+    <!-- TELA DE LOGIN / SEGURANÇA -->
+    <div id="tela-login" class="fixed inset-0 z-50 bg-gray-900/90 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center space-y-4 border border-gray-100 dark:border-gray-700">
+            <div class="w-16 h-16 bg-blue-50 dark:bg-blue-950/50 rounded-2xl mx-auto flex items-center justify-center text-3xl">📦</div>
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">Controle de Estoque Inteligente</h1>
-                <p class="text-sm text-gray-500">Versão de Demonstração (Até 5 Produtos)</p>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white">Estoque Protegido</h2>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Digite sua senha para aceder ao sistema.</p>
             </div>
-            <div class="flex flex-wrap items-center gap-2">
-                <button onclick="baixarTemplate()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-xs font-medium transition shadow-sm flex items-center gap-1">
-                    📥 Baixar Template
+            <form onsubmit="verificarLogin(event)" class="space-y-3 text-left">
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Utilizador</label>
+                    <input type="text" id="input-usuario" required placeholder="Ex: Mariana" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Senha (PIN)</label>
+                    <input type="password" id="input-senha" required placeholder="••••" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition text-sm shadow-sm mt-2">
+                    Entrar no Estoque
                 </button>
-                <label class="bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2 rounded-lg text-xs font-medium transition shadow-sm flex items-center gap-1 cursor-pointer">
-                    📂 Importar Planilha
-                    <input type="file" id="import-file" accept=".csv" class="hidden" onchange="importarCSV(event)">
-                </label>
-                <button onclick="exportarCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-medium transition shadow-sm flex items-center gap-1">
-                    📊 Exportar
-                </button>
-                <div id="status-conexao" class="px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
-                    A ligar à nuvem...
-                </div>
-            </div>
-        </header>
-
-        <!-- Navegação por Abas (Tabs) -->
-        <div class="flex border-b border-gray-200">
-            <button onclick="mudarAba('estoque')" id="tab-estoque" class="px-6 py-3 font-semibold text-sm border-b-2 border-blue-600 text-blue-600 transition">
-                📦 Gestão de Estoque
-            </button>
-            <button onclick="mudarAba('indicadores')" id="tab-indicadores" class="px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition">
-                📈 Indicadores e Gráficos
-            </button>
+            </form>
+            <p id="erro-senha" class="text-xs text-red-500 hidden font-medium">Senha incorreta! Dica: a senha é 1510.</p>
         </div>
-
-        <!-- ABA 1: GESTÃO DE ESTOQUE -->
-        <div id="secao-estoque" class="space-y-6">
-            <!-- Indicadores Rápidos -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <p class="text-sm font-medium text-gray-500">Total de Itens</p>
-                    <p id="total-itens" class="text-3xl font-bold text-gray-900 mt-2">0</p>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <p class="text-sm font-medium text-gray-500">Valor em Estoque</p>
-                    <p id="valor-total" class="text-3xl font-bold text-gray-900 mt-2">R$ 0,00</p>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <p class="text-sm font-medium text-gray-500">Alertas de Ruptura</p>
-                    <p id="alertas-ruptura" class="text-3xl font-bold text-red-600 mt-2">0</p>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <p class="text-sm font-medium text-gray-500">Acessos à Página</p>
-                    <p id="contador-visitas" class="text-3xl font-bold text-blue-600 mt-2">...</p>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Adicionar / Editar Produto -->
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
-                    <h2 id="form-titulo" class="text-lg font-semibold text-gray-900 mb-4">Adicionar Produto</h2>
-                    <form id="form-produto" class="space-y-4">
-                        <input type="hidden" id="edit-id">
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Código (SKU)</label>
-                            <div class="flex gap-2">
-                                <input type="text" id="sku" required placeholder="Ex: PRD-001" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                                <button type="button" onclick="iniciarLeitorBarcode()" class="bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg text-xs font-medium text-gray-700 transition" title="Ler Código de Barras">📷 Ler</button>
-                            </div>
-                        </div>
-
-                        <!-- Leitor de Código de Barras -->
-                        <div id="reader-container" class="hidden border border-gray-200 rounded-lg p-2 bg-gray-50">
-                            <div id="reader" style="width: 100%;"></div>
-                            <button type="button" onclick="pararLeitorBarcode()" class="mt-2 w-full bg-red-50 hover:bg-red-100 text-red-600 py-1 rounded text-xs font-medium">Fechar Leitor</button>
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Nome do Material</label>
-                            <input type="text" id="nome" required placeholder="Ex: Rolamento 6204" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Quantidade</label>
-                                <input type="number" id="qtd" required min="0" placeholder="0" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Estoque Mínimo</label>
-                                <input type="number" id="min" required min="0" placeholder="0" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Custo Unitário (R$)</label>
-                            <input type="number" id="custo" required step="0.01" min="0" placeholder="0,00" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Tirar Foto do Produto (Câmara)</label>
-                            <input type="file" id="foto-file" accept="image/*" capture="environment" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                        </div>
-
-                        <div class="flex gap-2">
-                            <button type="submit" id="btn-submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition text-sm shadow-sm">
-                                Salvar Produto
-                            </button>
-                            <button type="button" id="btn-cancelar" onclick="cancelarEdicao()" class="hidden bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2.5 rounded-lg text-sm transition">
-                                Cancelar
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Inventário Atual -->
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 lg:col-span-2">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                        <h2 class="text-lg font-semibold text-gray-900">Inventário Atual</h2>
-                        <input type="text" id="pesquisa" placeholder="Pesquisar por SKU ou Nome..." class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64">
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase">
-                                    <th class="py-3 px-2">Foto</th>
-                                    <th class="py-3 px-2">SKU / Produto</th>
-                                    <th class="py-3 px-2 text-center">Qtd</th>
-                                    <th class="py-3 px-2 text-center">Mín</th>
-                                    <th class="py-3 px-2 text-right">Custo</th>
-                                    <th class="py-3 px-2 text-right">Total</th>
-                                    <th class="py-3 px-2 text-center">Status</th>
-                                    <th class="py-3 px-2 text-center">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabela-produtos" class="divide-y divide-gray-50 text-sm">
-                                <tr>
-                                    <td colspan="8" class="py-8 text-center text-gray-400">Carregando dados da nuvem...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ABA 2: INDICADORES E GRÁFICOS -->
-        <div id="secao-indicadores" class="space-y-6 hidden">
-            
-            <!-- Resumo Analítico Detalhado -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <p class="text-sm font-medium text-gray-500">Média de Custo Unitário</p>
-                    <p id="ind-media-custo" class="text-2xl font-bold text-gray-900 mt-2">R$ 0,00</p>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <p class="text-sm font-medium text-gray-500">Total de Produtos Cadastrados</p>
-                    <p id="ind-total-cadastros" class="text-2xl font-bold text-gray-900 mt-2">0</p>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <p class="text-sm font-medium text-gray-500">Taxa de Ruptura (Alerta)</p>
-                    <p id="ind-taxa-ruptura" class="text-2xl font-bold text-red-600 mt-2">0%</p>
-                </div>
-            </div>
-
-            <!-- Seção de Gráficos Visuais -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center">
-                    <h3 class="text-md font-semibold text-gray-900 mb-4 w-full text-left">Distribuição de Status do Estoque</h3>
-                    <div class="w-64 h-64 flex items-center justify-center">
-                        <canvas id="chartStatus"></canvas>
-                    </div>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center">
-                    <h3 class="text-md font-semibold text-gray-900 mb-4 w-full text-left">Top Produtos por Valor Total (R$)</h3>
-                    <div class="w-full h-64 flex items-center justify-center">
-                        <canvas id="chartTopProdutos"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Filtros e Relatório -->
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
-                <h2 class="text-lg font-semibold text-gray-900">Filtros de Relatório</h2>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Filtrar por Status</label>
-                        <select id="filtro-status" onchange="aplicarFiltrosIndicadores()" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="todos">Todos os Produtos</option>
-                            <option value="normal">Estoque Normal</option>
-                            <option value="baixo">Abaixo do Mínimo (Ruptura)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Ordenar por</label>
-                        <select id="filtro-ordenacao" onchange="aplicarFiltrosIndicadores()" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="recente">Mais Recentes</option>
-                            <option value="maior-valor">Maior Valor Total (R$)</option>
-                            <option value="menor-valor">Menor Valor Total (R$)</option>
-                            <option value="maior-qtd">Maior Quantidade</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Pesquisa Rápida</label>
-                        <input type="text" id="filtro-texto" oninput="aplicarFiltrosIndicadores()" placeholder="Nome ou SKU..." class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                </div>
-
-                <div class="overflow-x-auto pt-2">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase">
-                                <th class="py-3 px-2">SKU</th>
-                                <th class="py-3 px-2">Nome do Produto</th>
-                                <th class="py-3 px-2 text-center">Quantidade</th>
-                                <th class="py-3 px-2 text-center">Mínimo</th>
-                                <th class="py-3 px-2 text-right">Custo Unitário</th>
-                                <th class="py-3 px-2 text-right">Valor Total</th>
-                                <th class="py-3 px-2 text-center">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabela-indicadores" class="divide-y divide-gray-50 text-sm">
-                            <tr>
-                                <td colspan="7" class="py-8 text-center text-gray-400">A carregar indicadores...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
     </div>
 
-    <!-- Script de Ligação e Funcionalidades -->
+    <!-- CONTEÚDO DO ESTOQUE (Oculto até autenticar) -->
+    <div id="conteudo-site" class="hidden">
+        
+        <!-- TOPO FIXO -->
+        <div class="sticky top-0 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm border-b border-gray-100 dark:border-gray-800 transition-colors">
+            <div class="max-w-7xl mx-auto p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-1.5">📦 Controle de Estoque Corporativo</h1>
+                    <p id="saudacao-usuario" class="text-xs text-gray-500 dark:text-gray-400">Sistema Integrado à Nuvem</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="baixarTemplate()" class="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-xl text-xs font-medium transition shadow-sm">
+                        📥 Template CSV
+                    </button>
+                    <label class="bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 text-blue-700 dark:text-blue-300 px-3 py-2 rounded-xl text-xs font-medium transition shadow-sm cursor-pointer border border-blue-100 dark:border-blue-900">
+                        📂 Importar
+                        <input type="file" id="import-file" accept=".csv" class="hidden" onchange="importarCSV(event)">
+                    </label>
+                    <button onclick="exportarCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-medium transition shadow-sm">
+                        📊 Exportar
+                    </button>
+                    <button onclick="alternarDarkMode()" class="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-xs transition" title="Modo Escuro">
+                        🌙/☀️
+                    </button>
+                    <button onclick="bloquearNovamente()" class="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 text-gray-600 dark:text-gray-300 p-2 rounded-xl text-xs transition" title="Bloquear / Sair">
+                        🔒
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
+            
+            <!-- ABAS DE NAVEGAÇÃO -->
+            <div class="flex border-b border-gray-200 dark:border-gray-800 overflow-x-auto">
+                <button onclick="mudarAba('estoque')" id="tab-estoque" class="px-6 py-3 font-semibold text-sm border-b-2 border-blue-600 text-blue-600 dark:text-blue-400 transition whitespace-nowrap">
+                    📦 Gestão de Produtos
+                </button>
+                <button onclick="mudarAba('indicadores')" id="tab-indicadores" class="px-6 py-3 font-semibold text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 transition whitespace-nowrap">
+                    📈 Indicadores e Gráficos
+                </button>
+            </div>
+
+            <!-- ABA 1: GESTÃO DE ESTOQUE -->
+            <div id="secao-estoque" class="space-y-6">
+                <!-- Métricas Rápidas -->
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Total de Itens</p>
+                        <p id="total-itens" class="text-2xl font-bold text-gray-900 dark:text-white mt-1">0</p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Valor em Estoque</p>
+                        <p id="valor-total" class="text-2xl font-bold text-gray-900 dark:text-white mt-1">R$ 0,00</p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <p class="text-xs font-medium text-red-500 uppercase">Alertas de Ruptura</p>
+                        <p id="alertas-ruptura" class="text-2xl font-bold text-red-600 mt-1">0</p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <p class="text-xs font-medium text-blue-500 uppercase">Estado da Nuvem</p>
+                        <p id="status-conexao" class="text-sm font-bold text-emerald-600 mt-2">A ligar...</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Formulário de Cadastro / Edição -->
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 h-fit">
+                        <h2 id="form-titulo" class="text-md font-semibold text-gray-900 dark:text-white mb-4">Adicionar Produto</h2>
+                        <form id="form-produto" class="space-y-4">
+                            <input type="hidden" id="edit-id">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Código (SKU)</label>
+                                <div class="flex gap-2">
+                                    <input type="text" id="sku" required placeholder="Ex: PRD-001" class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white">
+                                    <button type="button" onclick="iniciarLeitorBarcode()" class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 px-3 py-2 rounded-xl text-xs font-medium text-gray-700 dark:text-gray-200 transition" title="Ler Código de Barras">📷 Ler</button>
+                                </div>
+                            </div>
+
+                            <!-- Leitor de Código de Barras -->
+                            <div id="reader-container" class="hidden border border-gray-200 dark:border-gray-700 rounded-xl p-2 bg-gray-50 dark:bg-gray-900">
+                                <div id="reader" style="width: 100%;"></div>
+                                <button type="button" onclick="pararLeitorBarcode()" class="mt-2 w-full bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 py-1 rounded-lg text-xs font-medium">Fechar Leitor</button>
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Nome do Material</label>
+                                <input type="text" id="nome" required placeholder="Ex: Rolamento 6204" class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white">
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Quantidade</label>
+                                    <input type="number" id="qtd" required min="0" placeholder="0" class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Mínimo</label>
+                                    <input type="number" id="min" required min="0" placeholder="0" class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Custo Unitário (R$)</label>
+                                <input type="number" id="custo" required step="0.01" min="0" placeholder="0,00" class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Foto do Produto (Câmara)</label>
+                                <input type="file" id="foto-file" accept="image/*" capture="environment" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-950/50 dark:file:text-blue-300">
+                            </div>
+
+                            <div class="flex gap-2">
+                                <button type="submit" id="btn-submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-xl transition text-sm shadow-sm">
+                                    Salvar Produto
+                                </button>
+                                <button type="button" id="btn-cancelar" onclick="cancelarEdicao()" class="hidden bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2.5 rounded-xl text-sm transition">
+                                    Cancelar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Tabela de Inventário -->
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 lg:col-span-2 space-y-4">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <h2 class="text-md font-semibold text-gray-900 dark:text-white">Inventário Atual</h2>
+                            <input type="text" id="pesquisa" placeholder="Pesquisar por SKU ou Nome..." class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64 dark:text-white">
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-gray-100 dark:border-gray-700 text-[11px] font-semibold text-gray-400 uppercase">
+                                        <th class="py-3 px-2">Foto</th>
+                                        <th class="py-3 px-2">SKU / Produto</th>
+                                        <th class="py-3 px-2 text-center">Qtd</th>
+                                        <th class="py-3 px-2 text-center">Mín</th>
+                                        <th class="py-3 px-2 text-right">Custo</th>
+                                        <th class="py-3 px-2 text-right">Total</th>
+                                        <th class="py-3 px-2 text-center">Status</th>
+                                        <th class="py-3 px-2 text-center">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-produtos" class="divide-y divide-gray-50 dark:divide-gray-700 text-sm">
+                                    <tr>
+                                        <td colspan="8" class="py-8 text-center text-gray-400">A carregar dados da nuvem...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ABA 2: INDICADORES E GRÁFICOS -->
+            <div id="secao-indicadores" class="space-y-6 hidden">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Média de Custo Unitário</p>
+                        <p id="ind-media-custo" class="text-2xl font-bold text-gray-900 dark:text-white mt-1">R$ 0,00</p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Total de Produtos</p>
+                        <p id="ind-total-cadastros" class="text-2xl font-bold text-gray-900 dark:text-white mt-1">0</p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <p class="text-xs font-medium text-red-500 uppercase">Taxa de Ruptura</p>
+                        <p id="ind-taxa-ruptura" class="text-2xl font-bold text-red-600 mt-1">0%</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center">
+                        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4 w-full text-left">Status do Estoque</h3>
+                        <div class="w-64 h-64 flex items-center justify-center">
+                            <canvas id="chartStatus"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center">
+                        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4 w-full text-left">Top Produtos por Valor (R$)</h3>
+                        <div class="w-full h-64 flex items-center justify-center">
+                            <canvas id="chartTopProdutos"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- SCRIPT DE SUPABASE E CONTROLO -->
     <script>
+        const SENHA_MESTRA = "1510";
         const SUPABASE_URL = 'https://vicftmayscxpdojolrql.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_aaDp_kBwagtc5EqWTDmZIw_Me8DsPO0';
         
@@ -257,7 +244,54 @@
         let chartStatusInstance = null;
         let chartTopInstance = null;
 
-        // Alternância de Abas
+        window.addEventListener('DOMContentLoaded', () => {
+            if (sessionStorage.getItem('autenticado_estoque') === 'true') {
+                liberarAcesso();
+            }
+            if (localStorage.getItem('dark_mode') === 'true') {
+                document.documentElement.classList.add('dark');
+            }
+        });
+
+        function verificarLogin(e) {
+            e.preventDefault();
+            const usuario = document.getElementById('input-usuario').value.trim();
+            const senhaDigitada = document.getElementById('input-senha').value;
+            const erroEl = document.getElementById('erro-senha');
+
+            if (senhaDigitada === SENHA_MESTRA) {
+                sessionStorage.setItem('autenticado_estoque', 'true');
+                if (usuario) sessionStorage.setItem('nome_utilizador', usuario);
+                liberarAcesso();
+            } else {
+                erroEl.classList.remove('hidden');
+                document.getElementById('input-senha').value = '';
+                document.getElementById('input-senha').focus();
+            }
+        }
+
+        function liberarAcesso() {
+            document.getElementById('tela-login').classList.add('hidden');
+            document.getElementById('conteudo-site').classList.remove('hidden');
+            const nomeUser = sessionStorage.getItem('nome_utilizador') || 'Mariana';
+            document.getElementById('saudacao-usuario').textContent = `Bem-vinda ao Estoque, ${nomeUser}!`;
+            carregarProdutos();
+        }
+
+        function bloquearNovamente() {
+            sessionStorage.removeItem('autenticado_estoque');
+            document.getElementById('conteudo-site').classList.add('hidden');
+            document.getElementById('tela-login').classList.remove('hidden');
+            document.getElementById('input-senha').value = '';
+            document.getElementById('erro-senha').classList.add('hidden');
+        }
+
+        function alternarDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            localStorage.setItem('dark_mode', isDark);
+        }
+
         function mudarAba(aba) {
             const btnEstoque = document.getElementById('tab-estoque');
             const btnIndicadores = document.getElementById('tab-indicadores');
@@ -265,34 +299,16 @@
             const secIndicadores = document.getElementById('secao-indicadores');
 
             if (aba === 'estoque') {
-                btnEstoque.className = "px-6 py-3 font-semibold text-sm border-b-2 border-blue-600 text-blue-600 transition";
-                btnIndicadores.className = "px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition";
+                btnEstoque.className = "px-6 py-3 font-semibold text-sm border-b-2 border-blue-600 text-blue-600 dark:text-blue-400 transition whitespace-nowrap";
+                btnIndicadores.className = "px-6 py-3 font-semibold text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 transition whitespace-nowrap";
                 secEstoque.classList.remove('hidden');
                 secIndicadores.classList.add('hidden');
             } else {
-                btnIndicadores.className = "px-6 py-3 font-semibold text-sm border-b-2 border-blue-600 text-blue-600 transition";
-                btnEstoque.className = "px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition";
+                btnIndicadores.className = "px-6 py-3 font-semibold text-sm border-b-2 border-blue-600 text-blue-600 dark:text-blue-400 transition whitespace-nowrap";
+                btnEstoque.className = "px-6 py-3 font-semibold text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 transition whitespace-nowrap";
                 secIndicadores.classList.remove('hidden');
                 secEstoque.classList.add('hidden');
                 renderizarIndicadores();
-            }
-        }
-
-        async function registrarEContarVisitas() {
-            try {
-                let { data, error } = await _supabase.from('contador').select('visitas').eq('id', 1).single();
-                let totalVisitas = 1;
-                if (data) {
-                    totalVisitas = (data.visitas || 0) + 1;
-                    await _supabase.from('contador').update({ visitas: totalVisitas }).eq('id', 1);
-                } else {
-                    await _supabase.from('contador').insert([{ id: 1, visitas: 1 }]);
-                }
-                document.getElementById('contador-visitas').textContent = totalVisitas;
-            } catch (err) {
-                let localVisitas = parseInt(localStorage.getItem('visitas_demo') || '0') + 1;
-                localStorage.setItem('visitas_demo', localVisitas);
-                document.getElementById('contador-visitas').textContent = localVisitas;
             }
         }
 
@@ -306,16 +322,12 @@
                 renderizarTabela(produtosCache);
                 atualizarMetricas(produtosCache);
                 
-                if (!document.getElementById('secao-indicadores').classList.contains('hidden')) {
-                    renderizarIndicadores();
-                }
-
-                statusEl.className = "px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200";
-                statusEl.textContent = "Online (Demonstração Ativa)";
+                statusEl.textContent = "Online (Nuvem)";
+                statusEl.className = "text-sm font-bold text-emerald-600 mt-2";
             } catch (err) {
                 console.error('Erro ao carregar:', err);
-                statusEl.className = "px-3 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200";
                 statusEl.textContent = "Erro de Ligação";
+                statusEl.className = "text-sm font-bold text-red-600 mt-2";
             }
         }
 
@@ -329,27 +341,27 @@
             tbody.innerHTML = lista.map(p => {
                 const totalItem = (p.qtd || 0) * (p.custo || 0);
                 const abaixoMin = (p.qtd || 0) < (p.min || 0);
-                const fotoHtml = p.foto ? `<img src="${p.foto}" class="w-10 h-10 object-cover rounded-lg border border-gray-100">` : `<div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-xs text-gray-400">Sem foto</div>`;
+                const fotoHtml = p.foto ? `<img src="${p.foto}" class="w-10 h-10 object-cover rounded-xl border border-gray-100 dark:border-gray-700">` : `<div class="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center text-[10px] text-gray-400">Sem foto</div>`;
                 
                 return `
-                    <tr class="hover:bg-gray-50/50 transition">
+                    <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition">
                         <td class="py-3 px-2">${fotoHtml}</td>
                         <td class="py-3 px-2">
-                            <div class="font-medium text-gray-900">${p.nome}</div>
+                            <div class="font-medium text-gray-900 dark:text-white">${p.nome}</div>
                             <div class="text-xs text-gray-400">${p.sku}</div>
                         </td>
-                        <td class="py-3 px-2 text-center font-medium">${p.qtd}</td>
-                        <td class="py-3 px-2 text-center text-gray-500">${p.min}</td>
-                        <td class="py-3 px-2 text-right">R$ ${Number(p.custo).toFixed(2)}</td>
-                        <td class="py-3 px-2 text-right font-medium">R$ ${totalItem.toFixed(2)}</td>
+                        <td class="py-3 px-2 text-center font-medium dark:text-white">${p.qtd}</td>
+                        <td class="py-3 px-2 text-center text-gray-500 dark:text-gray-400">${p.min}</td>
+                        <td class="py-3 px-2 text-right dark:text-white">R$ ${Number(p.custo).toFixed(2)}</td>
+                        <td class="py-3 px-2 text-right font-medium dark:text-white">R$ ${totalItem.toFixed(2)}</td>
                         <td class="py-3 px-2 text-center">
-                            <span class="px-2 py-1 rounded-full text-xs font-medium ${abaixoMin ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-medium ${abaixoMin ? 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400' : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400'}">
                                 ${abaixoMin ? 'Baixo' : 'Normal'}
                             </span>
                         </td>
                         <td class="py-3 px-2 text-center space-x-2">
-                            <button onclick="prepararEdicao(${p.id})" class="text-blue-600 hover:text-blue-800 text-xs font-medium transition">Editar</button>
-                            <button onclick="apagarProduto(${p.id})" class="text-gray-400 hover:text-red-600 text-xs font-medium transition">Excluir</button>
+                            <button onclick="prepararEdicao(${p.id})" class="text-blue-600 dark:text-blue-400 hover:underline text-xs font-medium">Editar</button>
+                            <button onclick="apagarProduto(${p.id})" class="text-gray-400 hover:text-red-600 dark:hover:text-red-400 text-xs font-medium">Excluir</button>
                         </td>
                     </tr>
                 `;
@@ -367,9 +379,6 @@
         }
 
         function renderizarIndicadores() {
-            let lista = [...produtosCache];
-
-            // Métricas Analíticas
             const totalCadastros = produtosCache.length;
             const somaCustos = produtosCache.reduce((acc, p) => acc + (Number(p.custo) || 0), 0);
             const mediaCusto = totalCadastros > 0 ? somaCustos / totalCadastros : 0;
@@ -381,62 +390,10 @@
             document.getElementById('ind-total-cadastros').textContent = totalCadastros;
             document.getElementById('ind-taxa-ruptura').textContent = `${taxaRuptura.toFixed(1)}%`;
 
-            // Renderizar Gráficos Chart.js
             atualizarGraficos(totalNormais, totalRupturas);
-
-            // Filtros da Tabela
-            const statusFiltro = document.getElementById('filtro-status').value;
-            const textoFiltro = document.getElementById('filtro-texto').value.toLowerCase();
-            const ordenacao = document.getElementById('filtro-ordenacao').value;
-
-            if (statusFiltro === 'baixo') {
-                lista = lista.filter(p => (Number(p.qtd) || 0) < (Number(p.min) || 0));
-            } else if (statusFiltro === 'normal') {
-                lista = lista.filter(p => (Number(p.qtd) || 0) >= (Number(p.min) || 0));
-            }
-
-            if (textoFiltro) {
-                lista = lista.filter(p => p.nome.toLowerCase().includes(textoFiltro) || p.sku.toLowerCase().includes(textoFiltro));
-            }
-
-            if (ordenacao === 'maior-valor') {
-                lista.sort((a, b) => ((b.qtd || 0) * (b.custo || 0)) - ((a.qtd || 0) * (a.custo || 0)));
-            } else if (ordenacao === 'menor-valor') {
-                lista.sort((a, b) => ((a.qtd || 0) * (a.custo || 0)) - ((b.qtd || 0) * (b.custo || 0)));
-            } else if (ordenacao === 'maior-qtd') {
-                lista.sort((a, b) => (b.qtd || 0) - (a.qtd || 0));
-            }
-
-            // Tabela Relatório
-            const tbody = document.getElementById('tabela-indicadores');
-            if (lista.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-gray-400">Nenhum produto encontrado com estes filtros.</td></tr>`;
-                return;
-            }
-
-            tbody.innerHTML = lista.map(p => {
-                const totalItem = (p.qtd || 0) * (p.custo || 0);
-                const abaixoMin = (p.qtd || 0) < (p.min || 0);
-                return `
-                    <tr class="hover:bg-gray-50/50 transition">
-                        <td class="py-3 px-2 font-mono text-xs text-gray-600">${p.sku}</td>
-                        <td class="py-3 px-2 font-medium text-gray-900">${p.nome}</td>
-                        <td class="py-3 px-2 text-center font-medium">${p.qtd}</td>
-                        <td class="py-3 px-2 text-center text-gray-500">${p.min}</td>
-                        <td class="py-3 px-2 text-right">R$ ${Number(p.custo).toFixed(2)}</td>
-                        <td class="py-3 px-2 text-right font-medium">R$ ${totalItem.toFixed(2)}</td>
-                        <td class="py-3 px-2 text-center">
-                            <span class="px-2 py-1 rounded-full text-xs font-medium ${abaixoMin ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}">
-                                ${abaixoMin ? 'Baixo' : 'Normal'}
-                            </span>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
         }
 
         function atualizarGraficos(normais, rupturas) {
-            // Gráfico 1: Status (Doughnut)
             const ctxStatus = document.getElementById('chartStatus').getContext('2d');
             if (chartStatusInstance) chartStatusInstance.destroy();
             chartStatusInstance = new Chart(ctxStatus, {
@@ -456,10 +413,8 @@
                 }
             });
 
-            // Gráfico 2: Top 5 Produtos por Valor (Bar)
             const ctxTop = document.getElementById('chartTopProdutos').getContext('2d');
             if (chartTopInstance) chartTopInstance.destroy();
-            
             let topProds = [...produtosCache].sort((a, b) => ((b.qtd || 0) * (b.custo || 0)) - ((a.qtd || 0) * (a.custo || 0))).slice(0, 5);
             
             chartTopInstance = new Chart(ctxTop, {
@@ -478,40 +433,24 @@
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: {
-                        y: { beginAtZero: true, grid: { color: '#f3f4f6' } },
+                        y: { beginAtZero: true, grid: { color: 'rgba(200,200,200,0.1)' } },
                         x: { grid: { display: false } }
                     }
                 }
             });
         }
 
-        function aplicarFiltrosIndicadores() {
-            renderizarIndicadores();
-        }
-
         document.getElementById('form-produto').addEventListener('submit', async (e) => {
             e.preventDefault();
             const editId = document.getElementById('edit-id').value;
-
-            if (!editId && produtosCache.length >= 5) {
-                alert("⚠️ Versão de Demonstração:\n\nO limite de testes para esta demonstração é de 5 produtos.\n\nPara ter um sistema de estoque completo, ilimitado e personalizado para a sua empresa, clique em OK para falar diretamente conosco no WhatsApp!");
-                window.open("https://wa.me/5521967860665?text=Olá! Testei a demonstração de estoque e quero contratar o sistema completo para a minha empresa.", "_blank");
-                return;
-            }
-
             const fileInput = document.getElementById('foto-file');
             let fotoUrl = null;
 
             if (fileInput.files.length > 0) {
                 const file = fileInput.files[0];
                 const fileName = `${Date.now()}-${file.name}`;
-                const { data: uploadData, error: uploadError } = await _supabase.storage.from('fotos').upload(fileName, file);
-                
-                if (uploadError) {
-                    alert('Erro ao enviar foto: ' + uploadError.message);
-                    return;
-                }
-                
+                const { error: uploadError } = await _supabase.storage.from('fotos').upload(fileName, file);
+                if (uploadError) { alert('Erro ao enviar foto: ' + uploadError.message); return; }
                 const { data: publicUrlData } = _supabase.storage.from('fotos').getPublicUrl(fileName);
                 fotoUrl = publicUrlData.publicUrl;
             }
@@ -563,24 +502,19 @@
         }
 
         async function apagarProduto(id) {
-            if (!confirm('Tens a certeza que pretendes excluir este produto?')) return;
+            if (!confirm('Deseja excluir este produto?')) return;
             const { error } = await _supabase.from('produtos').delete().eq('id', id);
             if (error) { alert('Erro ao excluir: ' + error.message); return; }
             carregarProdutos();
         }
 
         function exportarCSV() {
-            if (produtosCache.length === 0) {
-                alert('Não há dados para exportar.');
-                return;
-            }
-
+            if (produtosCache.length === 0) { alert('Não há dados para exportar.'); return; }
             let csvContent = "data:text/csv;charset=utf-8,SKU,Nome,Quantidade,Minimo,Custo,Total\n";
             produtosCache.forEach(p => {
                 const total = (p.qtd || 0) * (p.custo || 0);
                 csvContent += `"${p.sku}","${p.nome}",${p.qtd},${p.min},${p.custo},${total}\n`;
             });
-
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
@@ -594,7 +528,6 @@
             let csvContent = "data:text/csv;charset=utf-8,SKU,Nome,Quantidade,Minimo,Custo\n";
             csvContent += "PRD-001,Exemplo Material A,10,2,25.50\n";
             csvContent += "PRD-002,Exemplo Material B,5,1,120.00\n";
-
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
@@ -607,59 +540,29 @@
         async function importarCSV(event) {
             const file = event.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = async function(e) {
                 const text = e.target.result;
                 const lines = text.split('\n');
                 let sucessos = 0;
-                let erros = 0;
 
                 for (let i = 1; i < lines.length; i++) {
                     const line = lines[i].trim();
                     if (!line) continue;
-
-                    let cols = [];
-                    let current = '';
-                    let inQuotes = false;
-                    for (let c = 0; c < line.length; c++) {
-                        let char = line[c];
-                        if (char === '"') { inQuotes = !inQuotes; }
-                        else if (char === ',' && !inQuotes) {
-                            cols.push(current.trim().replace(/^"|"$/g, ''));
-                            current = '';
-                        } else { current += char; }
-                    }
-                    cols.push(current.trim().replace(/^"|"$/g, ''));
-
+                    let cols = line.split(',');
                     if (cols.length >= 5) {
-                        const [sku, nome, qtd, min, custo] = cols;
-
-                        if (produtosCache.length >= 5) {
-                            alert(`⚠️ Atingido o limite de 5 produtos da Versão de Demonstração.\n\n${sucessos} produtos foram importados com sucesso até o bloqueio.`);
-                            window.open("https://wa.me/5521967860665?text=Olá! Testei a importação de planilha no estoque e quero contratar o sistema completo e ilimitado.", "_blank");
-                            break;
-                        }
-
                         const novoProduto = {
-                            sku: sku,
-                            nome: nome,
-                            qtd: parseInt(qtd) || 0,
-                            min: parseInt(min) || 0,
-                            custo: parseFloat(custo) || 0
+                            sku: cols[0].replace(/"/g, ''),
+                            nome: cols[1].replace(/"/g, ''),
+                            qtd: parseInt(cols[2]) || 0,
+                            min: parseInt(cols[3]) || 0,
+                            custo: parseFloat(cols[4]) || 0
                         };
-
                         const { error } = await _supabase.from('produtos').insert([novoProduto]);
-                        if (!error) {
-                            sucessos++;
-                            produtosCache.push(novoProduto);
-                        } else {
-                            erros++;
-                        }
+                        if (!error) sucessos++;
                     }
                 }
-
-                alert(`Importação concluída! ${sucessos} produtos adicionados com sucesso.${erros > 0 ? ' (' + erros + ' com erro)' : ''}`);
+                alert(`Importação concluída! ${sucessos} produtos adicionados.`);
                 event.target.value = '';
                 carregarProdutos();
             };
@@ -669,28 +572,23 @@
         function iniciarLeitorBarcode() {
             const container = document.getElementById('reader-container');
             container.classList.remove('hidden');
-            
             html5QrCode = new Html5Qrcode("reader");
             html5QrCode.start(
                 { facingMode: "environment" },
                 { fps: 10, qrbox: { width: 250, height: 100 } },
                 (decodedText) => {
                     document.getElementById('sku').value = decodedText;
-                    document.getElementById('filtro-texto').value = decodedText;
-                    aplicarFiltrosIndicadores();
                     pararLeitorBarcode();
                 },
                 (errorMessage) => {}
-            ).catch(err => {
-                alert('Erro ao iniciar câmara: ' + err);
-            });
+            ).catch(err => { alert('Erro ao iniciar câmara: ' + err); });
         }
 
         function pararLeitorBarcode() {
             if (html5QrCode) {
                 html5QrCode.stop().then(() => {
                     document.getElementById('reader-container').classList.add('hidden');
-                }).catch(err => {
+                }).catch(() => {
                     document.getElementById('reader-container').classList.add('hidden');
                 });
             } else {
@@ -705,10 +603,6 @@
             );
             renderizarTabela(filtrados);
         });
-
-        // Inicializar dados e contador
-        registrarEContarVisitas();
-        carregarProdutos();
     </script>
 </body>
 </html>
